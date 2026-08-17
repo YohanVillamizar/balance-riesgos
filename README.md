@@ -4,7 +4,7 @@ Diseño realizado con: Next.js + TypeScript + Tailwind CSS desplegado en Vercel.
 <img width="491" height="636" alt="image" src="https://github.com/user-attachments/assets/7a6b5455-51b7-4f04-8564-fcf26c0b6a2c" />
 
 Desglose de Requisitos Técnicos por Fase
-1. Fase 1: Motor Contable y Depreciación
+1. Motor Contable y Depreciación
 - Carga de CSV: Parseo dinámico (podemos usar PapaParse en el frontend para procesar el CSV al instante sin depender de un servidor externo).
 - Clasificación Dinámica: Un mapeo que identifique cuentas como:
   - Activo Corriente: Caja, Bancos, Cuentas por Cobrar, Inventarios.
@@ -22,8 +22,20 @@ Desglose de Requisitos Técnicos por Fase
 
   $$\text{Activo Total} = \text{Pasivo Total} + \text{Patrimonio Total}$$
 
-  2. Fase 2: Motor de Ratios Financieros
+2. Motor de Ratios Financieros
   Cálculo automatizado de los 4 grandes bloques:
    - Liquidez: Razón Circulante ($\frac{\text{Activo Corriente}}{\text{Pasivo Corriente}}$), Prueba Ácida ($\frac{\text{Activo Corriente} - \text{Inventario}}{\text{Pasivo Corriente}}$).
    - Apalancamiento: Endeudamiento ($\frac{\text{Pasivo Total}}{\text{Activo Total}}$), Apalancamiento Interno ($X_2 = \frac{\text{Pasivo Total}}{\text{Patrimonio}}$).
    - Actividad: Rotación de Inventarios, Días de Cobro.Rentabilidad: ROA, ROE, Margen Neto.
+
+3. Modelo Discriminante de Crédito
+El núcleo predictivo se basa en la función discriminante lineal:
+  $$Z = 0.4 X_1 + 0.6 X_2$$
+Donde:
+- $X_1 = \text{Razón Circulante} = \frac{\text{Activo Corriente}}{\text{Pasivo Corriente}}$$
+- X_2 = \text{Apalancamiento Interno} = \frac{\text{Pasivo Total}}{\text{Patrimonio Total}}$$
+
+Clasificación de Riesgo:
+- $Z > 1.4$: Crédito excelente.
+- $0.66 \le Z \le 1.4$: Crédito de riesgo normal.
+- $Z < 0.66$: Crédito malo.
