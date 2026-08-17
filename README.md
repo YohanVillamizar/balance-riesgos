@@ -11,9 +11,19 @@ Desglose de Requisitos Técnicos por Fase
   - Activo No Corriente: Maquinaria, Vehículos, Edificios, Terrenos.
   - Pasivo Corriente: Cuentas por Pagar, Proveedores, Impuestos por Pagar.
   - Pasivo No Corriente: Préstamos Bancarios a Largo Plazo, Hipotecas.
-  -  Patrimonio: Capital Social, Utilidades Retenidas.
+  - Patrimonio: Capital Social, Utilidades Retenidas.
 - Depreciación en Línea Recta:
 
   $$\text{Depreciación Anual} = \frac{\text{Costo Histórico} - \text{Valor de Salvamento}}{\text{Vida Útil}}$$
   
   - Regla estricta: Terreno tiene depreciación $= 0$.
+  
+- Validación de Equilibrio:
+
+  $$\text{Activo Total} = \text{Pasivo Total} + \text{Patrimonio Total}$$
+
+  2. Fase 2: Motor de Ratios Financieros
+  Cálculo automatizado de los 4 grandes bloques:
+   - Liquidez: Razón Circulante ($\frac{\text{Activo Corriente}}{\text{Pasivo Corriente}}$), Prueba Ácida ($\frac{\text{Activo Corriente} - \text{Inventario}}{\text{Pasivo Corriente}}$).
+   - Apalancamiento: Endeudamiento ($\frac{\text{Pasivo Total}}{\text{Activo Total}}$), Apalancamiento Interno ($X_2 = \frac{\text{Pasivo Total}}{\text{Patrimonio}}$).
+   - Actividad: Rotación de Inventarios, Días de Cobro.Rentabilidad: ROA, ROE, Margen Neto.
