@@ -30,6 +30,20 @@ export function calculateFinancialRatios(sheet: BalanceSheet): FinancialRatios {
     ? sheet.totalPasivo / sheet.totalPatrimonio 
     : 0;
 
+  // Actividad (Rotación de Inventario)
+  const rotacionInventario = (valorInventario > 0 && sheet.totalCostoVentas > 0)
+    ? sheet.totalCostoVentas / valorInventario
+    : undefined;
+
+  // Rentabilidad (ROA y ROE)
+  const roa = (sheet.totalActivo > 0 && sheet.utilidadNeta !== 0)
+    ? (sheet.utilidadNeta / sheet.totalActivo) * 100
+    : undefined;
+
+  const roe = (sheet.totalPatrimonio > 0 && sheet.utilidadNeta !== 0)
+    ? (sheet.utilidadNeta / sheet.totalPatrimonio) * 100
+    : undefined;
+
   return {
     liquidez: {
       razonCirculante,
@@ -39,8 +53,13 @@ export function calculateFinancialRatios(sheet: BalanceSheet): FinancialRatios {
       razonEndeudamiento,
       apalancamientoInterno
     },
-    actividad: {},
-    rentabilidad: {}
+    actividad: {
+      rotacionInventario
+    },
+    rentabilidad: {
+      roa,
+      roe
+    }
   };
 }
 

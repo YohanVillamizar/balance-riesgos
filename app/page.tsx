@@ -2,19 +2,42 @@
 
 import React, { useState, useEffect } from 'react';
 import { RawAccountEntry } from '@/lib/types';
-import { buildBalanceSheet } from '@/lib/accountingEngine';
+import { buildBalanceSheet, parseCSV } from '@/lib/accountingEngine';
 import { calculateFinancialRatios, evaluateCreditRisk } from '@/lib/ratiosEngine';
-import { mockBalancedCSV } from '@/lib/mockData';
 import { FileUpload } from '@/components/FileUpload';
 import { BalanceSheetView } from '@/components/BalanceSheetView';
 import { CreditScoreWidget } from '@/components/CreditScoreWidget';
 
 export default function Dashboard() {
-  const [rawEntries, setRawEntries] = useState<RawAccountEntry[]>(mockBalancedCSV);
+  const [rawEntries, setRawEntries] = useState<RawAccountEntry[]>([]);
+  const [fileName, setFileName] = useState<string>('datos.csv');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    fetch('/datos.csv')
+      .then((res) => {
+        if (!res.ok) throw new Error('No se pudo encontrar /datos.csv');
+        return res.text();
+      })
+      .then((text) => {
+        const parsed = parseCSV(text);
+        setRawEntries(parsed);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error cargando datos.csv:', err);
+        setIsLoading(false);
+      });
+  }, []);
 
   const balanceSheet = buildBalanceSheet(rawEntries);
   const ratios = calculateFinancialRatios(balanceSheet);
   const creditRisk = evaluateCreditRisk(ratios);
+
+  const handleDataLoaded = (data: RawAccountEntry[], name?: string) => {
+    setRawEntries(data);
+    if (name) setFileName(name);
+  };
 
   return (
     <main className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4 sm:p-8">
@@ -30,74 +53,108 @@ export default function Dashboard() {
               Procesamiento contable dinámico y predicción discriminante del riesgo de crédito.
             </p>
           </div>
+          <div className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Fuente activa: {fileName}</span>
+          </div>
         </header>
 
         {/* Zona de Carga de CSV */}
         <section className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">
-            Fase 1: Entrada de Datos Contables
+            Fase 1: Entrada de Datos Contables (CSV)
           </h2>
-          <FileUpload onDataLoaded={(data) => setRawEntries(data)} />
+          <FileUpload onDataLoaded={handleDataLoaded} currentFileName={fileName} />
         </section>
 
-        {/* Panel Predictivo y Métricas */}
-        {balanceSheet.estaEquilibrado && (
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <CreditScoreWidget result={creditRisk} />
-            </div>
+        {isLoading ? (
+          <div className="text-center py-12 text-slate-500">Cargando datos contables...</div>
+        ) : (
+          <>
+            {/* Panel Predictivo y Métricas (Fases 2 y 3) */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                <CreditScoreWidget result={creditRisk} />
+              </div>
 
-            {/* Tarjetas de Razones Clave */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm border-b border-slate-100 dark:border-slate-800 pb-2">
-                Fase 2: Razones Financieras Clave
-              </h3>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                    Razón Circulante (X₁)
-                  </span>
-                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                    {ratios.liquidez.razonCirculante.toFixed(2)}
-                  </span>
-                </div>
+              {/* Tarjetas de Razones Clave */}
+              <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm border-b border-slate-100 dark:border-slate-800 pb-2">
+                  Fase 2: Razones Financieras
+                </h3>
+                
+                <div className="space-y-3">
+                  {/* Liquidez */}
+                  <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                      Razón Circulante (X₁)
+                    </span>
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                      {ratios.liquidez.razonCirculante.toFixed(2)}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                    Prueba Ácida
-                  </span>
-                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                    {ratios.liquidez.pruebaAcida.toFixed(2)}
-                  </span>
-                </div>
+                  <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                      Prueba Ácida
+                    </span>
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                      {ratios.liquidez.pruebaAcida.toFixed(2)}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                    Apalancamiento Interno (X₂)
-                  </span>
-                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                    {ratios.apalancamiento.apalancamientoInterno.toFixed(2)}
-                  </span>
-                </div>
+                  {/* Apalancamiento */}
+                  <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                      Apalancamiento Interno (X₂)
+                    </span>
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                      {ratios.apalancamiento.apalancamientoInterno.toFixed(2)}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                    Razón de Endeudamiento
-                  </span>
-                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                    {(ratios.apalancamiento.razonEndeudamiento * 100).toFixed(1)}%
-                  </span>
+                  <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                      Razón de Endeudamiento
+                    </span>
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                      {(ratios.apalancamiento.razonEndeudamiento * 100).toFixed(1)}%
+                    </span>
+                  </div>
+
+                  {/* Actividad */}
+                  {ratios.actividad.rotacionInventario !== undefined && (
+                    <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                        Rotación de Inventario
+                      </span>
+                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                        {ratios.actividad.rotacionInventario.toFixed(2)}x
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Rentabilidad */}
+                  {ratios.rentabilidad.roa !== undefined && (
+                    <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                        ROA (Rend. s/ Activos)
+                      </span>
+                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                        {ratios.rentabilidad.roa.toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          </section>
-        )}
+            </section>
 
-        {/* Vista del Balance General */}
-        <section>
-          <BalanceSheetView sheet={balanceSheet} />
-        </section>
+            {/* Vista del Balance General */}
+            <section>
+              <BalanceSheetView sheet={balanceSheet} />
+            </section>
+          </>
+        )}
 
       </div>
     </main>

@@ -4,12 +4,17 @@ export type AccountCategory =
   | 'ACTIVO_NO_CORRIENTE'
   | 'PASIVO_CORRIENTE'
   | 'PASIVO_NO_CORRIENTE'
-  | 'PATRIMONIO';
+  | 'PATRIMONIO'
+  | 'INGRESO'
+  | 'EGRESO'
+  | 'COSTO';
 
 // Registro directo desde el archivo CSV
 export interface RawAccountEntry {
+  id?: string | number;
   cuenta: string;
   saldo: number;
+  tipoSaldo?: string;
   vidaUtilAnios?: number; // Opcional, para activos fijos depreciables
   valorSalvamento?: number; // Opcional, para activos fijos
 }
@@ -25,13 +30,15 @@ export interface ProcessedAccount {
   esDepreciable: boolean;
 }
 
-// Estructura completa del Balance General
+// Estructura completa del Balance General y Estado de Resultados
 export interface BalanceSheet {
   activoCorriente: ProcessedAccount[];
   activoNoCorriente: ProcessedAccount[];
   pasivoCorriente: ProcessedAccount[];
   pasivoNoCorriente: ProcessedAccount[];
   patrimonio: ProcessedAccount[];
+  ingresos: ProcessedAccount[];
+  egresos: ProcessedAccount[];
   
   totalActivoCorriente: number;
   totalActivoNoCorriente: number;
@@ -44,6 +51,11 @@ export interface BalanceSheet {
   totalPatrimonio: number;
   totalPasivoMasPatrimonio: number;
   
+  totalVentas: number;
+  totalCostoVentas: number;
+  totalGastos: number;
+  utilidadNeta: number;
+
   estaEquilibrado: boolean;
   diferenciaDescuadre: number;
 }

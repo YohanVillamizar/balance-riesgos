@@ -2,50 +2,44 @@
 
 import React, { useRef, useState } from 'react';
 import { RawAccountEntry } from '@/lib/types';
-import { mockBalancedCSV, mockUnbalancedCSV } from '@/lib/mockData';
+import { parseCSV } from '@/lib/accountingEngine';
 
 interface FileUploadProps {
-  onDataLoaded: (data: RawAccountEntry[]) => void;
+  onDataLoaded: (data: RawAccountEntry[], fileName?: string) => void;
+  currentFileName?: string;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded, currentFileName }) => {
   const [dragActive, setDragActive] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(currentFileName || 'datos.csv');
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const parseCSVText = (text: string) => {
-    const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-    if (lines.length < 2) return;
-
-    const entries: RawAccountEntry[] = [];
-    // Omitir cabecera (línea 0)
-    for (let i = 1; i < lines.length; i++) {
-      const columns = lines[i].split(',').map(col => col.trim().replace(/^"|"$/g, ''));
-      if (columns.length >= 2) {
-        const cuenta = columns[0];
-        const saldo = parseFloat(columns[1]) || 0;
-        const vidaUtilAnios = columns[2] ? parseFloat(columns[2]) : undefined;
-        const valorSalvamento = columns[3] ? parseFloat(columns[3]) : undefined;
-
-        if (cuenta) {
-          entries.push({ cuenta, saldo, vidaUtilAnios, valorSalvamento });
-        }
-      }
-    }
-
-    if (entries.length > 0) {
-      onDataLoaded(entries);
-    }
-  };
 
   const handleFile = (file: File) => {
     setFileName(file.name);
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      if (text) parseCSVText(text);
+      if (text) {
+        const entries = parseCSV(text);
+        if (entries.length > 0) {
+          onDataLoaded(entries, file.name);
+        }
+      }
     };
     reader.readAsText(file);
+  };
+
+  const loadDefaultCSV = async () => {
+    try {
+      const res = await fetch('/datos.csv');
+      if (!res.ok) throw new Error('No se pudo cargar datos.csv');
+      const text = await res.text();
+      const entries = parseCSV(text);
+      setFileName('datos.csv');
+      onDataLoaded(entries, 'datos.csv');
+    } catch (err) {
+      console.error('Error al cargar /datos.csv:', err);
+    }
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -90,39 +84,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
           <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            {fileName ? `Archivo cargado: ${fileName}` : 'Haz clic o arrastra un archivo CSV contable aquí'}
+            {fileName ? `Archivo activo: ${fileName}` : 'Haz clic o arrastra un archivo CSV contable aquí'}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Estructura: <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">Cuenta, Saldo, [VidaUtil], [Salvamento]</code>
+            Formatos soportados: CSV con cabeceras (<code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">id_cuenta, descripcion_cuenta, tipo_saldo, monto, vida_util_anios</code>) o columnas estándar.
           </p>
         </div>
       </div>
 
-      {/* Botones de prueba rápida para la Defensa */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="text-slate-500 font-medium">Carga rápida para demo en vivo:</span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setFileName('demo-balanceado.csv');
-              onDataLoaded(mockBalancedCSV);
-            }}
-            className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-200 font-medium transition-colors"
-          >
-            ✓ Cargar CSV Equilibrado
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setFileName('demo-descuadrado.csv');
-              onDataLoaded(mockUnbalancedCSV);
-            }}
-            className="px-3 py-1.5 bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 rounded-lg hover:bg-rose-200 font-medium transition-colors"
-          >
-            ✕ Cargar CSV Descuadrado
-          </button>
-        </div>
+        <span className="text-slate-500 font-medium">Archivo base del sistema:</span>
+        <button
+          type="button"
+          onClick={loadDefaultCSV}
+          className="px-3 py-1.5 bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/80 font-medium transition-colors flex items-center gap-1.5"
+        >
+          <span>↺</span> Recargar datos.csv (public/)
+        </button>
       </div>
     </div>
   );
