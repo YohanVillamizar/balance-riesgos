@@ -26,8 +26,8 @@ export function calculateFinancialRatios(sheet: BalanceSheet): FinancialRatios {
     : 0;
 
   // Apalancamiento Interno (X2)
-  const apalancamientoInterno = sheet.totalPatrimonio > 0 
-    ? sheet.totalPasivo / sheet.totalPatrimonio 
+  const apalancamientoInterno = sheet.totalPasivo > 0 
+    ? sheet.totalPatrimonio / sheet.totalPasivo 
     : 0;
 
   // Actividad (Rotación de Inventario)
